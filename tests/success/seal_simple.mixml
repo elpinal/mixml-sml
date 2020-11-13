@@ -1,0 +1,2 @@
+link X = {module t = [type :Type]} seals
+{module t = [type int]}

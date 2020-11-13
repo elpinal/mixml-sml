@@ -1,0 +1,11 @@
+link X =
+  link {module M = {type t : Type}} with
+  {module N = {type t : Type}}
+with
+link
+{ module M =
+    link {type t : Type} seals {type t = ext X.N.t}
+} with
+{ module N =
+    link {type t : Type} seals {type t = ext X.M.t}
+}

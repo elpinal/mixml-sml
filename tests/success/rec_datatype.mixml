@@ -1,0 +1,13 @@
+link X = {type void : Type} with
+
+new [unit
+  link
+    link Y = {type void : Type} with
+    link {val void_in : ext X.void -> ext Y.void} with
+    {val void_out : ext Y.void -> ext X.void}
+  seals
+
+  link Z = {type void = ext X.void} with
+  link {val void_in = fun (x : ext Z.void) -> x} with
+  {val void_out = fun (x : ext Z.void) -> x}
+]

@@ -1,0 +1,8 @@
+link
+  link {type t = int} with
+  link Y = {type u : Type} with
+  {val f : int -> ext Y.u}
+with
+  link X = {module t = [type :Type]} with
+  link {type u = bool} with
+  {val f = fun (x : ext X.t) -> true}

@@ -1,0 +1,4 @@
+[unit
+  link X = {} with
+  {module u = [type :Type]}
+]

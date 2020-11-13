@@ -1,0 +1,6 @@
+link M =
+  link x = {module t = [type int]} with
+  {module x = [val 3]}
+with
+link X = {module t = [type :Type]} with
+{module x = [val :ext X.t]}

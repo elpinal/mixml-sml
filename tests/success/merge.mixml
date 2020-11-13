@@ -1,0 +1,12 @@
+link U =
+  {module U =
+      link X = {module t = [type int]} with
+      link Y = {module u = [type :Type]} with
+      {module f = [val :ext Y.u]}
+  }
+with
+  {module U =
+      link X = {module t = [type :Type]} with
+      link Y = {module u = [type bool]} with
+      {module f = [val true]}
+  }

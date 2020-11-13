@@ -1,0 +1,8 @@
+link U =
+  {module U =
+    [unit
+      {module u = [type :Type]}
+    ]
+  }
+with
+  {module V = [unit {}]}

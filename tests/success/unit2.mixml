@@ -1,0 +1,12 @@
+[unit
+  link X = {module A = {module t = [type :Type]}} with
+  {
+    module R =
+      link Z1 =
+        link Y = {module u = [type :Type]} with
+        {module f = [val :ext X.A.t -> ext Y.u]}
+      seals
+      link Z2 = {module u = [type int]} with
+      {module f = [val fun (x : ext X.A.t) -> 7]}
+  }
+]

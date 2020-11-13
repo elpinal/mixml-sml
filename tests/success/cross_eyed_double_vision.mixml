@@ -1,0 +1,11 @@
+[unit
+  link C = {module iszero = [val :int -> bool]} with
+  link X =
+    link t1 = {module t = [type :Type]} with
+    link u1 = {module u = [type int]} with
+    {module f = [val fun (x : ext t1.t) -> x]}
+  with
+    link t2 = {module t = [type bool]} with
+    link u2 = {module u = [type :Type]} with
+    {module g = [val fun (y : ext u2.u) -> ext X.f (ext C.iszero y)]}
+]

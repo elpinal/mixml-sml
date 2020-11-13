@@ -1,0 +1,1 @@
+[{f : [bool -> bool]+, g : [int -> bool]+, iszero : [int -> bool]-, t : [= bool], u : [= int]}]+

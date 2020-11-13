@@ -1,0 +1,9 @@
+[submodule "sml-personal-lib"]
+	path = lib
+	url = https://github.com/elpinal/sml-personal-lib
+[submodule "incr-cycle-detection"]
+	path = incr-cycle-detection
+	url = https://github.com/elpinal/incr-cycle-detection
+[submodule "cmlib-mosml"]
+	path = cmlib-mosml
+	url = https://github.com/elpinal/cmlib-mosml

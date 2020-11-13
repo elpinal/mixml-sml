@@ -1,0 +1,43 @@
+$(SML_LIB)/basis/basis.mlb
+
+lib/personal.mlb
+incr-cycle-detection/cycle.mlb
+
+pretty.sml
+
+kind.sml
+
+basis Syn = bas
+  module_var.sml
+  label.sml
+  syntax.sml
+end
+
+basis P =
+let
+  cmlib-mosml/cmlib.mlb
+in
+  bas
+    position.sml
+    token.sml
+    make_parser.sml
+
+    open Syn
+    parser.sml
+
+    lexer.sml
+  end
+end
+
+basis Sem = bas
+  free_var.sml
+  semobj.sml
+  env.sml
+end
+
+open Syn Sem
+statics.sml
+
+open P
+mixml.sml
+main.sml

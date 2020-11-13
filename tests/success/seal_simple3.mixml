@@ -1,0 +1,9 @@
+link
+  link X1 = {module t = [type :Type]} with
+  link X2 = {module u = [type int]} with
+  {module f = [val :ext X2.u -> ext X1.t]}
+seals
+
+link {module t = [type bool]} with
+link Y2 = {module u = [type :Type]} with
+{module f = [val fun (x : ext Y2.u) -> true]}
