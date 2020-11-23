@@ -318,6 +318,7 @@ structure Statics = struct
   and left_invert env pat ty =
     case pat of
          Syntax.PVar v => VMap.singleton v ty
+       | Syntax.PWildcard => VMap.empty
 
   and elaborate_complete env m : modsig =
   let

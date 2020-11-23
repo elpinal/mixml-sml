@@ -69,6 +69,7 @@ structure Parser = MakeParser (
     fun params_cons (x, xs) = x :: xs
 
     fun pvar v = PVar v
+    fun pwildcard () = PWildcard
 
     fun type_id x = x
     fun tmodule m = TTyp m

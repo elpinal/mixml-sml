@@ -183,6 +183,7 @@ end = struct
        | #"."  => (L.proceed l c; token Token.DOT)
        | #","  => (L.proceed l c; token Token.COMMA)
        | #"+"  => (L.proceed l c; token Token.PLUS)
+       | #"_"  => (L.proceed l c; token Token.UNDERSCORE)
        | #"-"  => hyphen l
        | _     =>
            if Char.isLower c

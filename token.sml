@@ -38,6 +38,7 @@ structure Token = struct
     | COMMA
     | MINUS
     | PLUS
+    | UNDERSCORE
 
   val show = fn
       LOWER_IDENT s => s

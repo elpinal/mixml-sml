@@ -56,6 +56,7 @@ structure Syntax = struct
 
   and pattern
     = PVar of var
+    | PWildcard
 
   and ty
     = TTyp of module
