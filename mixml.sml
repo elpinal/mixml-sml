@@ -43,4 +43,5 @@ end = struct
       | Statics.EscapingLocalAbstractType fv =>
           fail ("escaping local abstract type:" <+> FVar.show fv)
       | Statics.Env.Unbound v => fail ("unbound module variable:" <+> ModVar.show v)
+      | Statics.Env.Val.Unbound v => fail ("unbound value variable:" <+> v)
 end
