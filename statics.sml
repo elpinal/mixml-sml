@@ -128,6 +128,7 @@ structure Statics = struct
   exception NotSummand of con * ty
   exception NotUnitType of ty
   exception NotTupleType of ty
+  exception NotBoolType of ty
   exception EscapingLocalAbstractType of fvar
   exception TuplePatternLen of Syntax.pattern list * ty list
   exception PatternDuplicateVar of Syntax.var
@@ -404,6 +405,10 @@ structure Statics = struct
                     end
                 | _ => raise NotTupleType ty
            end
+       | Syntax.PBool _ => VMap.empty before
+           (case reduce ty of
+                 TBase Syntax.Bool => ()
+               | _                 => raise NotBoolType ty)
 
   and elaborate_complete env m : modsig =
   let

@@ -66,6 +66,7 @@ structure Syntax = struct
     | PCon of con * pattern
     | PUnit
     | PTuple of pattern list
+    | PBool of bool
 
   and branch = Branch of pattern * exp
 

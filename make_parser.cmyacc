@@ -121,6 +121,8 @@ nonterminal PatAtom : pattern =
   UNDERSCORE          => pwildcard
   LPAREN RPAREN       => punit
   LPAREN 1:PatTuple RPAREN => ptuple
+  TRUE  => ptrue
+  FALSE => pfalse
 
 nonterminal PatTuple : patterns =
   1:Pat                  => patterns1

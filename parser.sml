@@ -89,6 +89,8 @@ structure Parser = MakeParser (
     fun pwildcard () = PWildcard
     val pcon = PCon
     fun punit () = PUnit
+    fun ptrue () = PBool true
+    fun pfalse () = PBool false
 
     fun ptuple [x] = x
       | ptuple xs = PTuple xs
