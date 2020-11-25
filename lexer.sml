@@ -161,6 +161,14 @@ end = struct
          SOME #">" => (L.proceed l #">"; token Token.RDARROW)
        | _         => token Token.EQUAL
 
+  (* Assume a single quote is already consumed. *)
+  fun quote (token : Token.t -> Token.t loc) l =
+  let
+    val s : string = unloc (ident l)
+  in
+    token (Token.QUOTE_IDENT s)
+  end
+
   fun lex1 l =
   let
     val start = L.pos l
@@ -191,6 +199,7 @@ end = struct
        | #"|"  => (L.proceed l c; token Token.BAR)
        | #"-"  => (L.proceed l c; hyphen token l)
        | #"="  => (L.proceed l c; equal token l)
+       | #"'"  => (L.proceed l c; quote token l)
        | _     =>
            if Char.isLower c
            then lower l
