@@ -117,6 +117,7 @@ structure Statics = struct
      | Syntax.TArrow _ => KBase
      | Syntax.TBase _ => KBase
      | Syntax.TSum _ => KBase
+     | Syntax.TTuple _ => KBase
   end
 
   exception CannotRealize of realizer
@@ -126,7 +127,10 @@ structure Statics = struct
   exception NotSumType of ty
   exception NotSummand of con * ty
   exception NotUnitType of ty
+  exception NotTupleType of ty
   exception EscapingLocalAbstractType of fvar
+  exception TuplePatternLen of Syntax.pattern list * ty list
+  exception PatternDuplicateVar of Syntax.var
 
   structure E = struct
     exception NotAtomicType of modsig
@@ -292,6 +296,14 @@ structure Statics = struct
          in
            TSum $ Sum.map f s
          end
+     | Syntax.TTuple xs =>
+         let fun f ty =
+           let val ty = elaborate_type env ty in
+             kindcheck ty KBase; ty
+           end
+         in
+           TTuple $ map f xs
+         end
 
   and elaborate_exp env : Syntax.exp -> ty =
     fn Syntax.EVal m =>
@@ -361,6 +373,7 @@ structure Statics = struct
              end
              ) bs
          end
+     | Syntax.ETuple xs => TTuple $ map (elaborate_exp env) xs
 
   and left_invert env pat ty =
     case pat of
@@ -377,6 +390,20 @@ structure Statics = struct
            (case reduce ty of
                  TBase Syntax.Unit => ()
                | _                 => raise NotUnitType ty)
+       | Syntax.PTuple pats =>
+           let in
+             case reduce ty of
+                  TTuple tys =>
+                    let in
+                      ListPair.foldlEq
+                        (fn (pat, ty, acc) => VMap.disjoint_union acc $ left_invert env pat ty)
+                        VMap.empty
+                        (pats, tys)
+                        handle ListPair.UnequalLengths => raise TuplePatternLen(pats, tys)
+                             | VMap.Duplicate v => raise PatternDuplicateVar v
+                    end
+                | _ => raise NotTupleType ty
+           end
 
   and elaborate_complete env m : modsig =
   let

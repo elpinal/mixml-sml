@@ -58,12 +58,14 @@ structure Syntax = struct
     | EApp of exp * exp
     | ECon of con * exp * ty
     | EMatch of exp * branch * branches
+    | ETuple of exp list
 
   and pattern
     = PVar of var
     | PWildcard
     | PCon of con * pattern
     | PUnit
+    | PTuple of pattern list
 
   and branch = Branch of pattern * exp
 
@@ -75,6 +77,7 @@ structure Syntax = struct
     | TArrow of ty * ty
     | TBase of base
     | TSum of ty Sum.t
+    | TTuple of ty list
 
   withtype branches = branch list
 end

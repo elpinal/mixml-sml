@@ -35,7 +35,7 @@ terminal RBRACE
 terminal COLON
 terminal RARROW precr 20
 terminal RDARROW
-terminal STAR precr 30
+terminal STAR
 terminal EQUAL
 terminal DOT
 terminal COMMA
@@ -94,12 +94,16 @@ nonterminal ExpApp : exp =
   MATCH 1:Exp RDARROW LBRACE OptBar 2:Branch 3:Branches RBRACE => ematch
 
 nonterminal ExpAtom : exp =
-  LPAREN 1:Exp RPAREN => exp_id
   TRUE         => etrue
   FALSE        => efalse
   1:NUMBER     => eint
   1:LOWER_IDENT => evar
   LPAREN RPAREN => eunit
+  LPAREN 1:ExpTuple RPAREN => etuple
+
+nonterminal ExpTuple : exps =
+  1:Exp                  => exps1
+  1:Exp COMMA 2:ExpTuple => exps_cons
 
 nonterminal Params1 : params =
   1:Param => params1
@@ -109,14 +113,18 @@ nonterminal Param : param =
   LPAREN 1:Pat COLON 2:Type RPAREN => param1
 
 nonterminal Pat : pattern =
-  1:PatAtom => pattern_id
+  1:PatAtom       => pattern_id
   1:Con 2:PatAtom => pcon
 
 nonterminal PatAtom : pattern =
-  LPAREN 1:Pat RPAREN => pattern_id
   1:LOWER_IDENT       => pvar
   UNDERSCORE          => pwildcard
   LPAREN RPAREN       => punit
+  LPAREN 1:PatTuple RPAREN => ptuple
+
+nonterminal PatTuple : patterns =
+  1:Pat                  => patterns1
+  1:Pat COMMA 2:PatTuple => patterns_cons
 
 nonterminal OptBar : none =
   /* empty */ => none_id
@@ -130,9 +138,13 @@ nonterminal Branches : branches =
   BAR 1:Branch 2:Branches => branches_cons
 
 nonterminal Type : ty =
-  1:TypeApp   => type_id
+  1:TypeTuple   => ttuple
   FUN LPAREN 1:TVar COLON 2:Kind RPAREN RARROW 3:Type => tabs
   1:Type RARROW 2:Type => tarrow
+
+nonterminal TypeTuple : types =
+  1:TypeApp     => ttuple1
+  1:TypeApp STAR 2:TypeTuple => ttuple_cons
 
 nonterminal TypeApp : ty =
   1:TypeAtom   => type_id

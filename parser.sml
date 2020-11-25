@@ -21,12 +21,15 @@ structure Parser = MakeParser (
     type modvar = ModVar.t
     type label = Label.t
     type exp = exp
+    type exps = exp list
     type param = pattern * ty
     type params = param list
     type pattern = pattern
+    type patterns = pattern list
     type branch = branch
     type branches = branches
     type ty = ty
+    type types = ty list
     type type_var = TVar.t
     type sum = ty Sum.t
     type con = con
@@ -72,6 +75,11 @@ structure Parser = MakeParser (
     val econ = ECon
     val ematch = EMatch
 
+    fun etuple [x] = x
+      | etuple xs = ETuple xs
+    fun exps1 x = [x]
+    val exps_cons = op::
+
     fun param1 (x, y) = (x, y)
     fun params1 x = [x]
     fun params_cons (x, xs) = x :: xs
@@ -81,6 +89,11 @@ structure Parser = MakeParser (
     fun pwildcard () = PWildcard
     val pcon = PCon
     fun punit () = PUnit
+
+    fun ptuple [x] = x
+      | ptuple xs = PTuple xs
+    fun patterns1 x = [x]
+    val patterns_cons = op::
 
     fun none_id () = ()
 
@@ -98,6 +111,11 @@ structure Parser = MakeParser (
     fun tint () = TBase Int
     fun tunit () = TBase Unit
     val tsum = TSum
+
+    fun ttuple [x] = x
+      | ttuple xs = TTuple xs
+    fun ttuple1 x = [x]
+    val ttuple_cons = op::
 
     val quote_tvar = TVar.from_string
 

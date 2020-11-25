@@ -39,6 +39,7 @@ functor SemObj (X : S) = struct
     | TArrow of ty * ty
     | TBase of base
     | TSum of ty Sum.t
+    | TTuple of ty list
     | TBottom
 
   datatype polarity
@@ -139,6 +140,7 @@ functor SemObj (X : S) = struct
        | TArrow(x, y) => TArrow(go c x, go c y)
        | TBase b      => TBase b
        | TSum s       => TSum(Sum.map (go c) s)
+       | TTuple xs    => TTuple(map (go c) xs)
        | TBottom      => TBottom
   in
     go j
@@ -168,6 +170,7 @@ functor SemObj (X : S) = struct
        | TArrow(x, y) => TArrow(go c x, go c y)
        | TBase b      => TBase b
        | TSum s       => TSum(Sum.map (go c) s)
+       | TTuple xs    => TTuple(map (go c) xs)
        | TBottom      => TBottom
   in
     go j
@@ -197,6 +200,12 @@ functor SemObj (X : S) = struct
     fun show_list [] = ""
       | show_list (x :: xs) = show_list' x xs
 
+    fun show_list_with' _ x [] = x
+      | show_list_with' s x (y :: ys) = x <> s <> show_list_with' s y ys
+
+    fun show_list_with _ [] = ""
+      | show_list_with s (x :: xs) = show_list_with' s x xs
+
     fun show_type n =
       fn TBound _     => raise Unreachable
        | TFree v      => FVar.show v
@@ -205,6 +214,7 @@ functor SemObj (X : S) = struct
        | TBase b      => show_base b
        | TSum s       => brack $ show_list $ map (fn (c, s) => show_con c <:> s) $
            Sum.to_list $ Sum.map (show_type 0) s
+       | TTuple xs    => paren (n > 3) $ show_list_with " * " $ map (show_type 4) xs
        | TBottom      => "bottom"
        | TAbs(k, x)   =>
            let val fv = FVar.fresh k in
@@ -306,6 +316,12 @@ functor SemObj (X : S) = struct
              Sum.fold_left g () s2;
              KBase
            end
+       | (TTuple xs, TTuple ys) =>
+           let in
+             ListPair.appEq (fn (x, y) => equal_type x y KBase) (xs, ys)
+             handle ListPair.UnequalLengths => raise TypeMismatch(ty1, ty2)
+             ; KBase
+           end
        | (TBottom, TBottom)   => KBase
        | _ => raise TypeMismatch(ty1, ty2)
 
@@ -347,6 +363,7 @@ functor SemObj (X : S) = struct
          before kindcheck kks y KBase
      | TBase _ => KBase
      | TSum s => KBase before Sum.app (fn ty => kindcheck kks ty KBase) s
+     | TTuple xs => KBase before app (fn ty => kindcheck kks ty KBase) xs
      | TBottom => KBase
 
   and kindcheck kks ty k =
@@ -381,6 +398,11 @@ functor SemObj (X : S) = struct
            (fn acc => fn _ => fn ty => FVar.Map.union acc (free_vars ty))
            FVar.Map.empty
            s
+     | TTuple xs =>
+         foldl
+           (fn (ty, acc) => FVar.Map.union acc (free_vars ty))
+           FVar.Map.empty
+           xs
      | TBottom => FVar.Map.empty
 
   val free_vars : ty -> unit FVar.Map.t = free_vars o reduce
