@@ -26,6 +26,8 @@ structure Parser = MakeParser (
     type pattern = pattern
     type ty = ty
     type type_var = TVar.t
+    type sum = ty Sum.t
+    type con = con
     type kind = kind
 
     fun module_id m = m
@@ -63,6 +65,7 @@ structure Parser = MakeParser (
     fun evar s = EVar s
     val eabs = EAbs
     val eapp = EApp
+    val econ = ECon
 
     fun param1 (x, y) = (x, y)
     fun params1 x = [x]
@@ -79,8 +82,14 @@ structure Parser = MakeParser (
     val tarrow = TArrow
     fun tbool () = TBase Bool
     fun tint () = TBase Int
+    val tsum = TSum
 
     val quote_tvar = TVar.from_string
+
+    fun sum1 (c, ty) = Sum.singleton c ty
+    fun sum_cons (c, ty, s) = Sum.insert c ty s
+
+    fun con_upper s = Constructor.from_string s
 
     fun kbase () = KBase
     val karrow = KArrow

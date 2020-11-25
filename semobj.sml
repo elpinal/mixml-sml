@@ -16,11 +16,14 @@ end
 signature S = sig
   eqtype label
   eqtype base
+  type con
 
   val show_label : label -> string
   val show_base : base -> string
+  val show_con : con -> string
 
   structure Record : MAP where type key = label
+  structure Sum : MAP where type key = con
 end
 
 functor SemObj (X : S) = struct
@@ -35,6 +38,7 @@ functor SemObj (X : S) = struct
     | TApp of ty * ty
     | TArrow of ty * ty
     | TBase of base
+    | TSum of ty Sum.t
     | TBottom
 
   datatype polarity
@@ -134,6 +138,7 @@ functor SemObj (X : S) = struct
        | TApp(x, y) => TApp(go c x, go c y)
        | TArrow(x, y) => TArrow(go c x, go c y)
        | TBase b      => TBase b
+       | TSum s       => TSum(Sum.map (go c) s)
        | TBottom      => TBottom
   in
     go j
@@ -162,6 +167,7 @@ functor SemObj (X : S) = struct
        | TApp(x, y) => TApp(go c x, go c y)
        | TArrow(x, y) => TArrow(go c x, go c y)
        | TBase b      => TBase b
+       | TSum s       => TSum(Sum.map (go c) s)
        | TBottom      => TBottom
   in
     go j
@@ -185,12 +191,20 @@ functor SemObj (X : S) = struct
     open Pretty
     open Std
 
+    fun show_list' x [] = x
+      | show_list' x (y :: ys) = x <> "," <+> show_list' y ys
+
+    fun show_list [] = ""
+      | show_list (x :: xs) = show_list' x xs
+
     fun show_type n =
       fn TBound _     => raise Unreachable
        | TFree v      => FVar.show v
        | TApp(x, y)   => paren (n > 4) $ show_type 4 x <+> show_type 5 y
        | TArrow(x, y) => paren (n > 2) $ show_type 3 x <+> "->" <+> show_type 2 y
        | TBase b      => show_base b
+       | TSum s       => brack $ show_list $ map (fn (c, s) => show_con c <:> s) $
+           Sum.to_list $ Sum.map (show_type 0) s
        | TBottom      => "bottom"
        | TAbs(k, x)   =>
            let val fv = FVar.fresh k in
@@ -201,12 +215,6 @@ functor SemObj (X : S) = struct
 
     fun show_polarity Export = "+"
       | show_polarity Import = "-"
-
-    fun show_list' x [] = x
-      | show_list' x (y :: ys) = x <> "," <+> show_list' y ys
-
-    fun show_list [] = ""
-      | show_list (x :: xs) = show_list' x xs
 
     fun show_modsig s =
       case s of
@@ -253,6 +261,8 @@ functor SemObj (X : S) = struct
   exception TypeMismatch of ty * ty
   exception BaseMismatch of base * base
   exception NotArrowKind of kind
+  exception OnlyInLeft of con * ty * ty
+  exception OnlyInRight of con * ty * ty
 
   (* beta eta equivalence *)
   fun equal_type x y k : unit =
@@ -280,6 +290,22 @@ functor SemObj (X : S) = struct
                 | KArrow(k1, k2) => k2 before equal_type y1 y2 k1
            end
        | (TBase b1, TBase b2) => if b1 = b2 then KBase else raise BaseMismatch(b1, b2)
+       | (TSum s1, TSum s2)   =>
+           let
+             fun f () c ty1 =
+               case Sum.lookup c s2 of
+                    SOME ty2 => equal_type ty1 ty2 KBase
+                  | NONE     => raise OnlyInLeft(c, TSum s1, TSum s2)
+
+             fun g () c _ =
+               case Sum.lookup c s2 of
+                    SOME _ => ()
+                  | NONE   => raise OnlyInRight(c, TSum s1, TSum s2)
+           in
+             Sum.fold_left f () s1;
+             Sum.fold_left g () s2;
+             KBase
+           end
        | (TBottom, TBottom)   => KBase
        | _ => raise TypeMismatch(ty1, ty2)
 
@@ -320,6 +346,7 @@ functor SemObj (X : S) = struct
          before kindcheck kks x KBase
          before kindcheck kks y KBase
      | TBase _ => KBase
+     | TSum s => KBase before Sum.app (fn ty => kindcheck kks ty KBase) s
      | TBottom => KBase
 
   and kindcheck kks ty k =
@@ -349,6 +376,11 @@ functor SemObj (X : S) = struct
      | TApp(x, y) => FVar.Map.union (free_vars x) (free_vars (reduce y)) (* We don't need `reduce` at head position. *)
      | TArrow(x, y) => FVar.Map.union (free_vars (reduce x)) (free_vars (reduce y))
      | TBase _ => FVar.Map.empty
+     | TSum s =>
+         Sum.fold_left
+           (fn acc => fn _ => fn ty => FVar.Map.union acc (free_vars ty))
+           FVar.Map.empty
+           s
      | TBottom => FVar.Map.empty
 
   val free_vars : ty -> unit FVar.Map.t = free_vars o reduce

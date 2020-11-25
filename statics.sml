@@ -4,11 +4,14 @@ structure Statics = struct
   structure M = struct
     type label = Label.t
     type base = Syntax.base
+    type con = con
 
     val show_label = Label.show
     val show_base = Syntax.show_base
+    val show_con = Constructor.show
 
     structure Record = BinarySearchMap(Label)
+    structure Sum = Sum
   end
 
   structure SemObj = SemObj(M)
@@ -113,12 +116,15 @@ structure Statics = struct
          end
      | Syntax.TArrow _ => KBase
      | Syntax.TBase _ => KBase
+     | Syntax.TSum _ => KBase
   end
 
   exception CannotRealize of realizer
   exception NotStructure of modsig
   exception ProjImport of modsig
   exception NotArrowType of ty
+  exception NotSumType of ty
+  exception NotSummand of con * ty
   exception EscapingLocalAbstractType of fvar
 
   structure E = struct
@@ -277,6 +283,14 @@ structure Statics = struct
            TArrow(x, y)
          end
      | Syntax.TBase b => TBase b
+     | Syntax.TSum s =>
+         let fun f ty =
+           let val ty = elaborate_type env ty in
+            kindcheck ty KBase; ty
+           end
+         in
+           TSum $ Sum.map f s
+         end
 
   and elaborate_exp env : Syntax.exp -> ty =
     fn Syntax.EVal m =>
@@ -313,6 +327,18 @@ structure Statics = struct
            case reduce ty1 of
                 TArrow(ty11, ty12) => ty12 before equal_type ty11 ty2 KBase
               | ty1'               => raise NotArrowType ty1'
+         end
+     | Syntax.ECon(c, x, ty) =>
+         let
+           val ty = elaborate_type env ty
+           val ty1 = elaborate_exp env x
+         in
+           case reduce ty of
+                TSum s =>
+                  let val ty2 = (valOf (Sum.lookup c s) handle Option => raise NotSummand(c, ty)) in
+                    equal_type ty1 ty2 KBase; ty
+                  end
+              | _ => raise NotSumType ty
          end
 
   and left_invert env pat ty =

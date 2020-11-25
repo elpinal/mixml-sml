@@ -53,6 +53,7 @@ structure Syntax = struct
     | EVar of var
     | EAbs of (pattern * ty) list * exp
     | EApp of exp * exp
+    | ECon of con * exp * ty
 
   and pattern
     = PVar of var
@@ -65,4 +66,5 @@ structure Syntax = struct
     | TApp of ty * ty
     | TArrow of ty * ty
     | TBase of base
+    | TSum of ty Sum.t
 end

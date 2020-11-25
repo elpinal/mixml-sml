@@ -82,6 +82,7 @@ nonterminal Label : label =
 nonterminal Exp : exp =
   1:ExpApp                   => exp_id
   FUN 1:Params1 RARROW 2:Exp => eabs
+  1:Con 2:ExpAtom COLON 3:Type => econ
 
 nonterminal ExpApp : exp =
   1:ExpAtom    => exp_id
@@ -121,9 +122,17 @@ nonterminal TypeAtom : ty =
   1:TVar       => tvar
   BOOL         => tbool
   INT          => tint
+  LBRACK 1:Sum RBRACK => tsum
 
 nonterminal TVar : type_var =
   1:QUOTE_IDENT => quote_tvar
+
+nonterminal Sum : sum =
+  1:Con COLON 2:Type => sum1
+  1:Con COLON 2:Type COMMA 3:Sum => sum_cons
+
+nonterminal Con : con =
+  1:UPPER_IDENT => con_upper
 
 nonterminal Kind : kind =
   CAP_TYPE => kbase
