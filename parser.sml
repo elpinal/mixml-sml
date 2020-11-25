@@ -56,6 +56,7 @@ structure Parser = MakeParser (
     fun mtype_spec (l, k) = MInj(l, MTI k)
     fun mval_binding (l, e) = MInj(l, MVE e)
     fun mval_spec (l, ty) = MInj(l, MVI ty)
+    fun munit_binding (l, m) = MInj(l, MUnit m)
 
     fun mvar_upper s = ModVar.from_string s
     fun mvar_lower s = ModVar.from_string s

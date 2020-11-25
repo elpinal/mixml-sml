@@ -73,6 +73,7 @@ nonterminal Dec : module =
   TYPE 1:Label COLON 2:Kind     => mtype_spec
   VAL 1:Label EQUAL 2:Exp       => mval_binding
   VAL 1:Label COLON 2:Type      => mval_spec
+  UNIT 1:Label EQUAL 2:Module   => munit_binding
 
 nonterminal ModVar : modvar =
   1:UPPER_IDENT => mvar_upper
