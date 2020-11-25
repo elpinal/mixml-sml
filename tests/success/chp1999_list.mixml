@@ -1,0 +1,42 @@
+link L = {unit LIST =
+  link X = {type t : Type} with
+  link {val nil : ext X.t} with
+  link {val null : ext X.t -> bool} with
+  link {val cons : int -> ext X.t -> ext X.t} with
+  {val uncons : ext X.t -> int * ext X.t}
+} with
+
+{module List =
+  ; forward declaration
+  link X = new L.LIST with
+
+  ; shorthand
+  link S = {type u = [Nil : unit, Cons : int * ext X.t]} with
+
+  ; the list type
+  link I = new [unit
+    link
+      link T = {type t : Type} with
+      link {val t_in : ext S.u -> ext T.t} with
+      {val t_out : ext T.t -> ext S.u}
+    seals
+    link T = {type t = ext S.u} with
+    link {val t_in = fun (x : ext T.t) -> x} with
+    {val t_out = fun (x : ext T.t) -> x}
+  ] with
+
+  link {val nil = ext I.t_in (Nil () : ext S.u)} with
+  link {val null = fun (xs : ext I.t) ->
+    match ext I.t_out xs => {
+      | Nil () => true
+      | Cons _ => false
+    }
+  } with
+  link {val cons = fun (n : int) (l : ext I.t) -> ext I.t_in (Cons (n, l) : ext S.u)} with
+  {val uncons = fun (l : ext I.t) ->
+    match ext I.t_out l => {
+      | Nil ()      => (0, l)
+      | Cons (n, l) => (n, l)
+    }
+  }
+}
