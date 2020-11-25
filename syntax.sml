@@ -59,6 +59,7 @@ structure Syntax = struct
   and pattern
     = PVar of var
     | PWildcard
+    | PCon of con * pattern
 
   and branch = Branch of pattern * exp
 

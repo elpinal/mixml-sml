@@ -364,6 +364,13 @@ structure Statics = struct
     case pat of
          Syntax.PVar v => VMap.singleton v ty
        | Syntax.PWildcard => VMap.empty
+       | Syntax.PCon(c, pat') =>
+           let in
+             case reduce ty of
+                  TSum s => left_invert env pat'
+                              (valOf (Sum.lookup c s) handle Option => raise NotSummand(c, ty))
+                | _ => raise NotSumType ty
+           end
 
   and elaborate_complete env m : modsig =
   let

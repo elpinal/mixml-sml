@@ -108,8 +108,13 @@ nonterminal Param : param =
   LPAREN 1:Pat COLON 2:Type RPAREN => param1
 
 nonterminal Pat : pattern =
-  1:LOWER_IDENT => pvar
-  UNDERSCORE    => pwildcard
+  1:PatAtom => pattern_id
+  1:Con 2:PatAtom => pcon
+
+nonterminal PatAtom : pattern =
+  LPAREN 1:Pat RPAREN => pattern_id
+  1:LOWER_IDENT       => pvar
+  UNDERSCORE          => pwildcard
 
 nonterminal OptBar : none =
   /* empty */ => none_id

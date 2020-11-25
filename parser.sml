@@ -75,8 +75,10 @@ structure Parser = MakeParser (
     fun params1 x = [x]
     fun params_cons (x, xs) = x :: xs
 
+    fun pattern_id x = x
     fun pvar v = PVar v
     fun pwildcard () = PWildcard
+    val pcon = PCon
 
     fun none_id () = ()
 
