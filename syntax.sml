@@ -54,10 +54,13 @@ structure Syntax = struct
     | EAbs of (pattern * ty) list * exp
     | EApp of exp * exp
     | ECon of con * exp * ty
+    | EMatch of exp * branch * branches
 
   and pattern
     = PVar of var
     | PWildcard
+
+  and branch = Branch of pattern * exp
 
   and ty
     = TTyp of module
@@ -67,4 +70,6 @@ structure Syntax = struct
     | TArrow of ty * ty
     | TBase of base
     | TSum of ty Sum.t
+
+  withtype branches = branch list
 end

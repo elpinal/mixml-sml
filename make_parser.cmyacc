@@ -23,6 +23,7 @@ terminal BOOL
 terminal INT
 terminal TRUE
 terminal FALSE
+terminal MATCH
 
 terminal LPAREN
 terminal RPAREN
@@ -33,6 +34,7 @@ terminal RBRACE
 
 terminal COLON
 terminal RARROW precr 20
+terminal RDARROW
 terminal STAR precr 30
 terminal EQUAL
 terminal DOT
@@ -40,6 +42,7 @@ terminal COMMA
 terminal MINUS
 terminal PLUS
 terminal UNDERSCORE
+terminal BAR
 
 nonterminal Module : module =
   1:ModuleProj     => module_id
@@ -88,6 +91,7 @@ nonterminal ExpApp : exp =
   1:ExpAtom    => exp_id
   EXT 1:ModuleProj => emodule
   1:ExpApp 2:ExpAtom => eapp
+  MATCH 1:Exp RDARROW LBRACE OptBar 2:Branch 3:Branches RBRACE => ematch
 
 nonterminal ExpAtom : exp =
   LPAREN 1:Exp RPAREN => exp_id
@@ -106,6 +110,17 @@ nonterminal Param : param =
 nonterminal Pat : pattern =
   1:LOWER_IDENT => pvar
   UNDERSCORE    => pwildcard
+
+nonterminal OptBar : none =
+  /* empty */ => none_id
+  BAR         => none_id
+
+nonterminal Branch : branch =
+  1:Pat RDARROW 2:Exp => branch1
+
+nonterminal Branches : branches =
+  /* empty */             => branches_nil
+  BAR 1:Branch 2:Branches => branches_cons
 
 nonterminal Type : ty =
   1:TypeApp   => type_id

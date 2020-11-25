@@ -24,11 +24,14 @@ structure Parser = MakeParser (
     type param = pattern * ty
     type params = param list
     type pattern = pattern
+    type branch = branch
+    type branches = branches
     type ty = ty
     type type_var = TVar.t
     type sum = ty Sum.t
     type con = con
     type kind = kind
+    type none = unit
 
     fun module_id m = m
     val mvar = MVar
@@ -66,6 +69,7 @@ structure Parser = MakeParser (
     val eabs = EAbs
     val eapp = EApp
     val econ = ECon
+    val ematch = EMatch
 
     fun param1 (x, y) = (x, y)
     fun params1 x = [x]
@@ -73,6 +77,12 @@ structure Parser = MakeParser (
 
     fun pvar v = PVar v
     fun pwildcard () = PWildcard
+
+    fun none_id () = ()
+
+    val branch1 = Branch
+    fun branches_nil () = []
+    val branches_cons = op::
 
     fun type_id x = x
     fun tmodule m = TTyp m

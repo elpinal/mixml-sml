@@ -22,6 +22,7 @@ structure Token = struct
     | INT
     | TRUE
     | FALSE
+    | MATCH
 
     | LPAREN
     | RPAREN
@@ -32,6 +33,7 @@ structure Token = struct
 
     | COLON
     | RARROW
+    | RDARROW
     | STAR
     | EQUAL
     | DOT
@@ -39,6 +41,7 @@ structure Token = struct
     | MINUS
     | PLUS
     | UNDERSCORE
+    | BAR
 
   val show = fn
       LOWER_IDENT s => s
@@ -63,6 +66,7 @@ structure Token = struct
     | INT      => "int"
     | TRUE     => "true"
     | FALSE    => "false"
+    | MATCH    => "match"
 
     | LPAREN => "("
     | RPAREN => ")"
@@ -71,12 +75,15 @@ structure Token = struct
     | LBRACE => "{"
     | RBRACE => "}"
 
-    | COLON  => ":"
-    | RARROW => "->"
-    | STAR   => "*"
-    | EQUAL  => "="
-    | DOT    => "."
-    | COMMA  => ","
-    | MINUS  => "-"
-    | PLUS   => "+"
+    | COLON      => ":"
+    | RARROW     => "->"
+    | RDARROW    => "=>"
+    | STAR       => "*"
+    | EQUAL      => "="
+    | DOT        => "."
+    | COMMA      => ","
+    | MINUS      => "-"
+    | PLUS       => "+"
+    | UNDERSCORE => "_"
+    | BAR        => "|"
 end

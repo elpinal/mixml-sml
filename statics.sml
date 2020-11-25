@@ -340,6 +340,25 @@ structure Statics = struct
                   end
               | _ => raise NotSumType ty
          end
+     | Syntax.EMatch(x, b1, bs) =>
+         let
+           val ty = elaborate_exp env x
+
+           fun insert acc v ty = Env.Val.insert v ty acc
+
+           val Syntax.Branch(p1, a1) = b1
+           val m = left_invert env p1 ty
+           val env' = VMap.fold_left insert env m
+           val ty1 = elaborate_exp env' a1
+         in
+           ty1
+           before
+           app (fn Syntax.Branch(p, a) =>
+             let val env' = VMap.fold_left insert env (left_invert env p ty) in
+               equal_type ty1 (elaborate_exp env' a) KBase
+             end
+             ) bs
+         end
 
   and left_invert env pat ty =
     case pat of

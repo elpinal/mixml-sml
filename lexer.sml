@@ -103,6 +103,7 @@ end = struct
          | "int"    => Token.INT
          | "true"   => Token.TRUE
          | "false"  => Token.FALSE
+         | "match"  => Token.MATCH
          | _        => Token.LOWER_IDENT s
   in
     Loc(loc, t)
@@ -154,6 +155,12 @@ end = struct
          SOME #">" => (L.proceed l #">"; token Token.RARROW)
        | _         => token Token.MINUS
 
+  (* Assume '=' is already consumed. *)
+  fun equal token l =
+    case L.peek_option l of
+         SOME #">" => (L.proceed l #">"; token Token.RDARROW)
+       | _         => token Token.EQUAL
+
   fun lex1 l =
   let
     val start = L.pos l
@@ -177,12 +184,13 @@ end = struct
 
        | #":"  => (L.proceed l c; token Token.COLON)
        | #"*"  => (L.proceed l c; token Token.STAR)
-       | #"="  => (L.proceed l c; token Token.EQUAL)
        | #"."  => (L.proceed l c; token Token.DOT)
        | #","  => (L.proceed l c; token Token.COMMA)
        | #"+"  => (L.proceed l c; token Token.PLUS)
        | #"_"  => (L.proceed l c; token Token.UNDERSCORE)
+       | #"|"  => (L.proceed l c; token Token.BAR)
        | #"-"  => (L.proceed l c; hyphen token l)
+       | #"="  => (L.proceed l c; equal token l)
        | _     =>
            if Char.isLower c
            then lower l
