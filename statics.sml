@@ -125,6 +125,7 @@ structure Statics = struct
   exception NotArrowType of ty
   exception NotSumType of ty
   exception NotSummand of con * ty
+  exception NotUnitType of ty
   exception EscapingLocalAbstractType of fvar
 
   structure E = struct
@@ -305,6 +306,7 @@ structure Statics = struct
            case l of
                 Syntax.LBool _ => TBase Syntax.Bool
               | Syntax.LInt _  => TBase Syntax.Int
+              | Syntax.LUnit   => TBase Syntax.Unit
          end
      | Syntax.EVar v => Env.Val.lookup env v
      | Syntax.EAbs(ps, x) =>
@@ -371,6 +373,10 @@ structure Statics = struct
                               (valOf (Sum.lookup c s) handle Option => raise NotSummand(c, ty))
                 | _ => raise NotSumType ty
            end
+       | Syntax.PUnit => VMap.empty before
+           (case reduce ty of
+                 TBase Syntax.Unit => ()
+               | _                 => raise NotUnitType ty)
 
   and elaborate_complete env m : modsig =
   let

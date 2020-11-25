@@ -99,6 +99,7 @@ nonterminal ExpAtom : exp =
   FALSE        => efalse
   1:NUMBER     => eint
   1:LOWER_IDENT => evar
+  LPAREN RPAREN => eunit
 
 nonterminal Params1 : params =
   1:Param => params1
@@ -115,6 +116,7 @@ nonterminal PatAtom : pattern =
   LPAREN 1:Pat RPAREN => pattern_id
   1:LOWER_IDENT       => pvar
   UNDERSCORE          => pwildcard
+  LPAREN RPAREN       => punit
 
 nonterminal OptBar : none =
   /* empty */ => none_id
@@ -142,6 +144,7 @@ nonterminal TypeAtom : ty =
   1:TVar       => tvar
   BOOL         => tbool
   INT          => tint
+  UNIT         => tunit
   LBRACK 1:Sum RBRACK => tsum
 
 nonterminal TVar : type_var =

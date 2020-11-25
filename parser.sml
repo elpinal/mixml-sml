@@ -65,6 +65,7 @@ structure Parser = MakeParser (
     fun etrue () = ELit (LBool true)
     fun efalse () = ELit (LBool false)
     fun eint n = ELit (LInt n)
+    fun eunit n = ELit LUnit
     fun evar s = EVar s
     val eabs = EAbs
     val eapp = EApp
@@ -79,6 +80,7 @@ structure Parser = MakeParser (
     fun pvar v = PVar v
     fun pwildcard () = PWildcard
     val pcon = PCon
+    fun punit () = PUnit
 
     fun none_id () = ()
 
@@ -94,6 +96,7 @@ structure Parser = MakeParser (
     val tarrow = TArrow
     fun tbool () = TBase Bool
     fun tint () = TBase Int
+    fun tunit () = TBase Unit
     val tsum = TSum
 
     val quote_tvar = TVar.from_string

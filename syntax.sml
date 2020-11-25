@@ -23,13 +23,16 @@ structure Syntax = struct
   datatype base
     = Bool
     | Int
+    | Unit
 
   fun show_base Bool = "bool"
     | show_base Int  = "int"
+    | show_base Unit = "unit"
 
   datatype lit
     = LBool of bool
     | LInt  of int
+    | LUnit
 
   type var = string
 
@@ -60,6 +63,7 @@ structure Syntax = struct
     = PVar of var
     | PWildcard
     | PCon of con * pattern
+    | PUnit
 
   and branch = Branch of pattern * exp
 
