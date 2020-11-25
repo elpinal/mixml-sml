@@ -8,6 +8,8 @@ structure Lexer :> sig
   val peek : t -> char
   val peek_after : t -> int -> char
 
+  val peek_option : t -> char option
+
   val proceed : t -> char -> unit
   val next : t -> char
 
@@ -37,6 +39,9 @@ end = struct
 
   fun peek (l : t) = peek_after l 0
 
+  fun peek_option l = SOME (peek l)
+    handle EOF => NONE
+
   fun proceed (l : t) c =
     #offset l := !(#offset l) + 1
     before
@@ -61,19 +66,6 @@ structure Lex : sig
 end = struct
   structure L = Lexer
   open LexerError
-
-  fun hyphen l =
-  let
-    val start = L.pos l
-    val () = L.proceed l #"-"
-    fun token t = Loc({from = start, to = L.pos l}, t)
-  in
-    (
-    case L.peek l of
-         #">" => (L.proceed l #">"; token Token.RARROW)
-       | _    => (token Token.MINUS)
-    ) handle L.EOF => token Token.MINUS
-  end
 
   fun ident l : string loc =
   let
@@ -156,6 +148,12 @@ end = struct
        | _     => skip_comment l
   end handle L.EOF => ()
 
+  (* Assume '-' is already consumed. *)
+  fun hyphen token l =
+    case L.peek_option l of
+         SOME #">" => (L.proceed l #">"; token Token.RARROW)
+       | _         => token Token.MINUS
+
   fun lex1 l =
   let
     val start = L.pos l
@@ -184,7 +182,7 @@ end = struct
        | #","  => (L.proceed l c; token Token.COMMA)
        | #"+"  => (L.proceed l c; token Token.PLUS)
        | #"_"  => (L.proceed l c; token Token.UNDERSCORE)
-       | #"-"  => hyphen l
+       | #"-"  => (L.proceed l c; hyphen token l)
        | _     =>
            if Char.isLower c
            then lower l
