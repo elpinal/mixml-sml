@@ -87,6 +87,10 @@ structure Statics = struct
                 Unit ut => ut (* TODO: check that `loc` is empty? *)
               | _       => raise NotUnit t
          end
+     | Syntax.MDataSpec(l, ty) =>
+         get_template env $ Syntax.MInj(l, Syntax.MTI $ get_template_type env ty)
+     | Syntax.MDataBind(l, ty) =>
+         get_template env $ Syntax.MSeal(NONE, Syntax.MDataSpec(l, ty), Syntax.MEmpty)
   end
 
   and get_template_type env : Syntax.ty -> kind =
@@ -253,6 +257,36 @@ structure Statics = struct
            case elaborate_complete env m of
                 Unit(is, ks, s) => open_at_modsig 1 (map f is) $ open_at_modsig 0 (map TFree es) s
               | s               => raise E.NotUnit s
+         end
+     | Syntax.MDataSpec(l, ty) =>
+         let
+           (* Currently, only datatypes of kind `Type` are supported. *)
+           (* Extending to higher kinds requires polymorphism. *)
+           val k = kind_of $ elaborate_type env ty
+           open Syntax
+           val v = ModVar.fresh "data_spec"
+           val vl = TTyp $ MProj(MVar v, l)
+         in
+           elaborate env r es $ MLink(SOME v, MInj(l, MTI k),
+             MLink(NONE, MInj(Label.ann l "in", MVI(TArrow(ty, vl))),
+               MInj(Label.ann l "out", MVI(TArrow(vl, ty)))
+             )
+           )
+         end
+     | Syntax.MDataBind(l, ty) =>
+         let
+           open Syntax
+           val v = ModVar.fresh "data_spec"
+           val vl = TTyp $ MProj(MVar v, l)
+           val c = MVE(EAbs([(PVar "x", vl)], EVar "x"))
+         in
+           elaborate env r es $ MSeal(NONE, MDataSpec(l, ty),
+             MLink(SOME v, MInj(l, MTE(ty)),
+               MLink(NONE, MInj(Label.ann l "in", c),
+                 MInj(Label.ann l "out", c)
+               )
+             )
+           )
          end
 
   and elaborate_type env : Syntax.ty -> ty =

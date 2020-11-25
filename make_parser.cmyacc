@@ -24,6 +24,7 @@ terminal INT
 terminal TRUE
 terminal FALSE
 terminal MATCH
+terminal DATA
 
 terminal LPAREN
 terminal RPAREN
@@ -74,6 +75,8 @@ nonterminal Dec : module =
   VAL 1:Label EQUAL 2:Exp       => mval_binding
   VAL 1:Label COLON 2:Type      => mval_spec
   UNIT 1:Label EQUAL 2:Module   => munit_binding
+  DATA 1:Label COLON 2:Type     => mdata_spec
+  DATA 1:Label EQUAL 2:Type     => mdata_binding
 
 nonterminal ModVar : modvar =
   1:UPPER_IDENT => mvar_upper

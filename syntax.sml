@@ -49,6 +49,8 @@ structure Syntax = struct
     | MNew of module
     | MLink of modvar option * module * module
     | MSeal of modvar option * module * module
+    | MDataSpec of label * ty
+    | MDataBind of label * ty
 
   and exp
     = EVal of module

@@ -5,6 +5,8 @@ structure Label :> sig
 
   val from_string : string -> t
 
+  val ann : t -> string -> t
+
   val show : t -> string
 end = struct
   type t = string
@@ -12,6 +14,8 @@ end = struct
   val compare = String.compare
 
   fun from_string x = x
+
+  fun ann x y = x ^ "_" ^ y
 
   fun show x = x
 end

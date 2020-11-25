@@ -104,6 +104,7 @@ end = struct
          | "true"   => Token.TRUE
          | "false"  => Token.FALSE
          | "match"  => Token.MATCH
+         | "data"   => Token.DATA
          | _        => Token.LOWER_IDENT s
   in
     Loc(loc, t)

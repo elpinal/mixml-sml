@@ -23,6 +23,7 @@ structure Token = struct
     | TRUE
     | FALSE
     | MATCH
+    | DATA
 
     | LPAREN
     | RPAREN
@@ -67,6 +68,7 @@ structure Token = struct
     | TRUE     => "true"
     | FALSE    => "false"
     | MATCH    => "match"
+    | DATA     => "data"
 
     | LPAREN => "("
     | RPAREN => ")"
