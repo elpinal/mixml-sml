@@ -45,34 +45,34 @@ terminal UNDERSCORE
 terminal BAR
 
 nonterminal Module : module =
-  1:ModuleProj     => module_id
-  NEW 1:ModuleProj => mnew
-  LINK 1:ModVar EQUAL 2:Module WITH 3:Module => mlink
+  1:ModuleProj                                => module_id
+  NEW 1:ModuleProj                            => mnew
+  LINK 1:ModVar EQUAL 2:Module WITH 3:Module  => mlink
   LINK 1:ModVar EQUAL 2:Module SEALS 3:Module => mseal
-  LINK 1:Module WITH 2:Module => mlink_novar
-  LINK 1:Module SEALS 2:Module => mseal_novar
+  LINK 1:Module WITH 2:Module                 => mlink_novar
+  LINK 1:Module SEALS 2:Module                => mseal_novar
 
 nonterminal ModuleProj : module =
-  1:ModuleAtom         => module_id
+  1:ModuleAtom             => module_id
   1:ModuleProj DOT 2:Label => mproj
 
 nonterminal ModuleAtom : module =
-  LPAREN 1:Module RPAREN => module_id
-  1:ModVar      => mvar
-  LBRACE RBRACE => empty_module
-  LBRACK VAL 1:Exp RBRACK => exp_export
-  LBRACK VAL COLON 1:Type RBRACK => exp_import
-  LBRACK TYPE 1:Type RBRACK => type_export
+  LPAREN 1:Module RPAREN          => module_id
+  1:ModVar                        => mvar
+  LBRACE RBRACE                   => empty_module
+  LBRACK VAL 1:Exp RBRACK         => exp_export
+  LBRACK VAL COLON 1:Type RBRACK  => exp_import
+  LBRACK TYPE 1:Type RBRACK       => type_export
   LBRACK TYPE COLON 1:Kind RBRACK => type_import
-  LBRACK UNIT 1:Module RBRACK => unit_export
-  LBRACE 1:Dec RBRACE         => module_id
+  LBRACK UNIT 1:Module RBRACK     => unit_export
+  LBRACE 1:Dec RBRACE             => module_id
 
 nonterminal Dec : module =
   MODULE 1:Label EQUAL 2:Module => minj
-  TYPE 1:Label EQUAL 2:Type => mtype_binding
-  TYPE 1:Label COLON 2:Kind => mtype_spec
-  VAL 1:Label EQUAL 2:Exp => mval_binding
-  VAL 1:Label COLON 2:Type => mval_spec
+  TYPE 1:Label EQUAL 2:Type     => mtype_binding
+  TYPE 1:Label COLON 2:Kind     => mtype_spec
+  VAL 1:Label EQUAL 2:Exp       => mval_binding
+  VAL 1:Label COLON 2:Type      => mval_spec
 
 nonterminal ModVar : modvar =
   1:UPPER_IDENT => mvar_upper
@@ -83,22 +83,22 @@ nonterminal Label : label =
   1:LOWER_IDENT => label_lower
 
 nonterminal Exp : exp =
-  1:ExpApp                   => exp_id
-  FUN 1:Params1 RARROW 2:Exp => eabs
+  1:ExpApp                     => exp_id
+  FUN 1:Params1 RARROW 2:Exp   => eabs
   1:Con 2:ExpAtom COLON 3:Type => econ
 
 nonterminal ExpApp : exp =
-  1:ExpAtom    => exp_id
-  EXT 1:ModuleProj => emodule
+  1:ExpAtom          => exp_id
+  EXT 1:ModuleProj   => emodule
   1:ExpApp 2:ExpAtom => eapp
   MATCH 1:Exp RDARROW LBRACE OptBar 2:Branch 3:Branches RBRACE => ematch
 
 nonterminal ExpAtom : exp =
-  TRUE         => etrue
-  FALSE        => efalse
-  1:NUMBER     => eint
-  1:LOWER_IDENT => evar
-  LPAREN RPAREN => eunit
+  TRUE                     => etrue
+  FALSE                    => efalse
+  1:NUMBER                 => eint
+  1:LOWER_IDENT            => evar
+  LPAREN RPAREN            => eunit
   LPAREN 1:ExpTuple RPAREN => etuple
 
 nonterminal ExpTuple : exps =
