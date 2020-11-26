@@ -507,7 +507,13 @@ functor SemObj (X : S) = struct
        | Str r  => Str (Record.map (apply_modsig subst) r)
 
     and apply_unit subst (is, es, s) =
-      (is, es, apply_modsig subst s)
+    let
+      val ifvs = map (fn (k, _) => FVar.fresh k) is
+      val efvs = map FVar.fresh es
+      val s' = open_at_modsig 0 (map TFree efvs) (open_at_modsig 1 (map TFree ifvs) s)
+    in
+      (is, es, close_at_modsig 1 ifvs (close_at_modsig 0 efvs (apply_modsig subst s')))
+    end
 
     fun apply_realizer subst =
       fn RAtom ty => RAtom (apply subst ty)
