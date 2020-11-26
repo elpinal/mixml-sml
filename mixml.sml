@@ -37,9 +37,9 @@ end = struct
       | Statics.TypeMismatch(x, y) =>
           fail ("type mismatch: " ^ Statics.Show.show_type 0 x <+> "vs" <+> Statics.Show.show_type 0 y)
       | Statics.TypeSelfCycle p =>
-          fail ("transparent type cycle: self recursion at" <+> Statics.Path.show p)
+          fail ("transparent type cycle: self recursion at" <+> Path.show p)
       | Statics.TypeCycle(p1, p2) =>
-          fail ("transparent type cycle:" <+> Statics.Path.show p1 <+> "depends on" <+> Statics.Path.show p2)
+          fail ("transparent type cycle:" <+> Path.show p1 <+> "depends on" <+> Path.show p2)
       | Statics.EscapingLocalAbstractType fv =>
           fail ("escaping local abstract type:" <+> FVar.show fv)
       | Statics.Env.Unbound v => fail ("unbound module variable:" <+> ModVar.show v)
