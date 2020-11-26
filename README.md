@@ -43,6 +43,13 @@ $ ./mixml-mlton
 - Higher-order units and first-class units are not implemented yet.
 - Elaboration translaton (and thus the dynamic semantics) still remains to be implemented.
 
+## Additions to the original system in the paper
+
+- Pattern matching: `match exp => {pattern => exp | ...}`
+- Labeled sums: `LT () : [LT : unit, EQ : unit, GT : unit]`
+- Units (empty tuples): `()` of type `unit`
+- Tuples: `(3, true, ())` of type `int * bool * unit`
+
 ## References
 
 ### Mixin’ up the ML module system
