@@ -1,0 +1,39 @@
+link U =
+  {unit ExpDec =
+    link E = {module Expr = {type exp : Type}} with
+    {module Decl =
+      link X = {type dec : Type} with
+      {val make_val : int -> ext E.Expr.exp -> ext X.dec}
+    }
+  }
+with
+
+link E =
+{unit ExprU =
+  link X = new U.ExpDec with
+  {module Expr =
+    link S = {type u = [Let : ext X.Decl.dec * ext X.Expr.exp]} with
+    link Y = new [unit {data exp = ext S.u}] with
+    link {val make_let = fun (d : ext X.Decl.dec) (e : ext Y.exp) -> ext Y.exp_in (Let(d, e) : ext S.u)} with
+    {val make_let_val = fun (id : int) (e1 : ext Y.exp) (e2 : ext Y.exp) ->
+      ext Y.exp_in (Let(ext X.Decl.make_val id e1, e2) : ext S.u)
+    }
+  }
+}
+with
+
+link D =
+{unit DeclU =
+  link X = new U.ExpDec with
+  {module Decl =
+    link S = {type u = [Val : int * ext X.Expr.exp]} with
+    link Y = {data dec = ext S.u} with
+    {val make_val = fun (n : int) (e : ext X.Expr.exp) -> ext Y.dec_in (Val(n, e) : ext S.u)}
+  }
+}
+with
+
+{ module M =
+    link new E.ExprU with
+    new D.DeclU
+}

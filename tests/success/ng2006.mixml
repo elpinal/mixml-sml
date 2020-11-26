@@ -1,0 +1,34 @@
+link X =
+  link {module Tree =
+    link T = {type t : Type} with
+    {val max : ext T.t -> int}
+  } with
+  {module Forest =
+    link T = {type t : Type} with
+    {val max : ext T.t -> int}
+  }
+seals
+
+link
+{module Tree =
+  link S = {type u = [Leaf : int, Node : int * ext X.Forest.t]} with
+  link T = new [unit {data t = ext S.u}] with
+  {val max = fun (x : ext T.t) ->
+    match ext T.t_out x => {
+      | Leaf i => i
+      | Node(i, f) => ext X.Forest.max f
+    }
+  }
+}
+with
+
+{module Forest =
+  link S = {type u = [Nil : unit, Cons : ext X.Tree.t * ext X.Forest.t]} with
+  link T = new [unit {data t = ext S.u}] with
+  {val max = fun (x : ext T.t) ->
+    match ext T.t_out x => {
+      | Nil () => 0
+      | Cons(hd, tl) => ext X.Tree.max hd
+    }
+  }
+}
