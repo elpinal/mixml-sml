@@ -19,3 +19,7 @@ end = struct
 
   fun show x = x
 end
+
+type label = Label.t
+
+structure Record = BinarySearchMap(Label)

@@ -6,10 +6,10 @@ incr-cycle-detection/cycle.mlb
 pretty.sml
 
 kind.sml
+label.sml
 
 basis Syn = bas
   module_var.sml
-  label.sml
   constructor.sml
   syntax.sml
 end

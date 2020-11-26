@@ -2,15 +2,12 @@ structure Statics = struct
   open Std
 
   structure M = struct
-    type label = Label.t
     type base = Syntax.base
     type con = con
 
-    val show_label = Label.show
     val show_base = Syntax.show_base
     val show_con = Constructor.show
 
-    structure Record = BinarySearchMap(Label)
     structure Sum = Sum
   end
 

@@ -14,15 +14,12 @@ end = struct
 end
 
 signature S = sig
-  eqtype label
   eqtype base
   type con
 
-  val show_label : label -> string
   val show_base : base -> string
   val show_con : con -> string
 
-  structure Record : MAP where type key = label
   structure Sum : MAP where type key = con
 end
 
@@ -103,7 +100,7 @@ functor SemObj (X : S) = struct
     fun show_list [] = ""
       | show_list (x :: xs) = show_list' x xs
 
-    fun show p = show_list (map show_label (Deque.to_list p))
+    fun show p = show_list (map Label.show (Deque.to_list p))
   end
 
   type path = Path.t
@@ -232,7 +229,7 @@ functor SemObj (X : S) = struct
          | Val(ty, p) => brack (show_type 0 ty) <> show_polarity p
          | Unit u => brack (show_unit u) <> show_polarity Export
          | Str r => brace $ show_list $
-             map (fn (l, s) => show_label l <:> s) $ Record.to_list $ Record.map show_modsig r
+             map (fn (l, s) => Label.show l <:> s) $ Record.to_list $ Record.map show_modsig r
 
     and show_unit (is, es, s) =
     let
@@ -614,7 +611,7 @@ functor SemObj (X : S) = struct
       fn LAtom k => Kind.show k
        | LStr r  =>
            let open Pretty in
-             (brace o Show.show_list o map (fn (l, s) => show_label l ^ ":" ^ s) o Record.to_list o Record.map show_loctemp) r
+             (brace o Show.show_list o map (fn (l, s) => Label.show l ^ ":" ^ s) o Record.to_list o Record.map show_loctemp) r
            end
 
     (* Return an empty structure if missing. *)
