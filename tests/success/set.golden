@@ -1,0 +1,1 @@
+{MakeSet : [forall (!18@Elem.t : Type). exist (!19 : Type). {Elem : {compare : [!18 -> !18 -> !0]-, t : [= !18]}, empty : [!19]+, insert : [!18 -> !19 -> !19]+, member : [!18 -> !19 -> bool]+, t : [= !19]}]+, order : [= !0], order_in : [[EQ : unit, GT : unit, LT : unit] -> !0]+, order_out : [!0 -> [EQ : unit, GT : unit, LT : unit]]+, u : [= [EQ : unit, GT : unit, LT : unit]]}

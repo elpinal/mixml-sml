@@ -1,0 +1,46 @@
+link S = {type u = [LT : unit, EQ : unit, GT : unit]} with
+link O = {data order = ext S.u} with
+
+{unit MakeSet =
+  link E = {module Elem =
+    link T = {type t : Type} with
+    {val compare : ext T.t -> ext T.t -> ext O.order}
+  } with
+
+  link X =
+    link T = {type t : Type} with
+    link {val empty : ext T.t} with
+    link {val insert : ext E.Elem.t -> ext T.t -> ext T.t} with
+    {val member : ext E.Elem.t -> ext T.t -> bool}
+  seals
+
+  link S = {type u = [Empty : unit, Node : ext X.t * ext E.Elem.t * ext X.t]} with
+
+  link T = new [unit {data t = ext S.u}] with
+
+  link e = {val empty = ext T.t_in (Empty () : ext S.u)} with
+
+  link {val insert = fun (x : ext E.Elem.t) (s : ext T.t) ->
+    match ext T.t_out s => {
+      | Empty ()      => ext T.t_in (Node(ext e.empty, x, ext e.empty) : ext S.u)
+      | Node(l, y, r) =>
+          match ext O.order_out (ext E.Elem.compare x y) => {
+            | LT () => ext T.t_in (Node(ext X.insert x l, y, r) : ext S.u)
+            | EQ () => ext T.t_in (Node(l, x, r) : ext S.u)
+            | GT () => ext T.t_in (Node(l, y, ext X.insert x r) : ext S.u)
+          }
+    }
+  } with
+
+  {val member = fun (x : ext E.Elem.t) (s : ext T.t) ->
+    match ext T.t_out s => {
+      | Empty ()      => false
+      | Node(l, y, r) =>
+          match ext O.order_out (ext E.Elem.compare x y) => {
+            | LT () => ext X.member x l
+            | EQ () => true
+            | GT () => ext X.member x r
+          }
+    }
+  }
+}

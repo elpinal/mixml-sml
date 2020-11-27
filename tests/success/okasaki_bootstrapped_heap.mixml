@@ -1,0 +1,68 @@
+link O = {
+  unit ORDERED =
+    link T = {type t : Type} with
+    {val leq : ext T.t -> ext T.t -> bool}
+} with
+
+link H = {
+  unit HEAP =
+    link E = {module Elem = new O.ORDERED} with
+    link T = {type t : Type} with
+    link {val empty : ext T.t} with
+    link {val merge : ext T.t -> ext T.t -> ext T.t} with
+    link {val insert : ext E.Elem.t -> ext T.t -> ext T.t} with
+    {val findMin : ext T.t -> [None : unit, Some : ext E.Elem.t]}
+} with
+
+{unit Bootstrap =
+  link M = {
+    unit MkHeap : (new H.HEAP) import (Elem)
+  } with
+  link A = {module Arg = new O.ORDERED} with
+
+  link
+    link new H.HEAP with
+    {module Elem = {type t = ext A.Arg.t}}
+  seals
+
+  link E = {module Elem = A.Arg} with
+
+  link X =
+    {module Heap = new H.HEAP}
+  with
+
+  link B = {module Boot =
+    link S = {type u = [E : unit, H : ext E.Elem.t * ext X.Heap.t]} with
+    link T = {data t = ext S.u} with
+    {val leq = fun (x : ext T.t) (y : ext T.t) ->
+      match (ext T.t_out x, ext T.t_out y) => {
+        | (H(x, _), H(y, _)) => ext E.Elem.leq x y
+      }
+    }
+  } with
+
+  link h = {module Heap = link {module Elem = B.Boot} with new M.MkHeap} with
+
+  link T = {type t = ext B.Boot.t} with
+  link {val empty = ext B.Boot.t_in (E () : ext B.Boot.u)} with
+  link m = {val merge = fun (a : ext T.t) (b : ext T.t) ->
+    match (ext B.Boot.t_out a, ext B.Boot.t_out b) => {
+      | (E (), h)            => ext B.Boot.t_in h
+      | (h, E ())            => ext B.Boot.t_in h
+      | (H(x, p1), H(y, p2)) =>
+          match ext E.Elem.leq x y => {
+            | true  => ext B.Boot.t_in (H(x, ext h.Heap.insert b p1) : ext B.Boot.u)
+            | false => ext B.Boot.t_in (H(y, ext h.Heap.insert a p2) : ext B.Boot.u)
+          }
+    }
+  } with
+  link {val insert = fun (x : ext E.Elem.t) ->
+    ext m.merge (ext B.Boot.t_in (H(x, ext h.Heap.empty) : ext B.Boot.u))
+  } with
+  {val findMin = fun (a : ext T.t) ->
+    match ext B.Boot.t_out a => {
+      | E ()    => None () : [None : unit, Some : ext E.Elem.t]
+      | H(x, _) => Some x : [None : unit, Some : ext E.Elem.t]
+    }
+  }
+}
