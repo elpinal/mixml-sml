@@ -40,8 +40,9 @@ $ ./mixml-mlton
 ## Status
 
 - Few bugs are found.
-- Higher-order units and first-class units are not implemented yet.
-- Elaboration translaton (and thus the dynamic semantics) still remains to be implemented.
+- Higher-order units have been implemented. (But merging of two unit imports are not implemented yet.)
+- First-class units are not implemented yet.
+- Elaboration translation (and thus the dynamic semantics) still remains to be implemented.
 
 ## Additions to the original system in the paper
 
@@ -49,6 +50,9 @@ $ ./mixml-mlton
 - Labeled sums: `LT () : [LT : unit, EQ : unit, GT : unit]`
 - Units (empty tuples): `()` of type `unit`
 - Tuples: `(3, true, ())` of type `int * bool * unit`
+- Datatypes: `{data t = int}` of signature `{data t : int}`
+  - In this case, `t_in` and `t_out` are generated as coercions between `t` and `int`.
+  - Recursive datatypes: `link X = {type : Type} with new [unit {data t = ext X.t}]`
 
 ## References
 
