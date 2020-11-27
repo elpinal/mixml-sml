@@ -105,6 +105,8 @@ end = struct
          | "false"  => Token.FALSE
          | "match"  => Token.MATCH
          | "data"   => Token.DATA
+         | "import" => Token.IMPORT
+         | "export" => Token.EXPORT
          | _        => Token.LOWER_IDENT s
   in
     Loc(loc, t)

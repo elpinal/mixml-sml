@@ -24,6 +24,8 @@ structure Token = struct
     | FALSE
     | MATCH
     | DATA
+    | IMPORT
+    | EXPORT
 
     | LPAREN
     | RPAREN
@@ -69,6 +71,8 @@ structure Token = struct
     | FALSE    => "false"
     | MATCH    => "match"
     | DATA     => "data"
+    | IMPORT   => "import"
+    | EXPORT   => "export"
 
     | LPAREN => "("
     | RPAREN => ")"

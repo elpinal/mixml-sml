@@ -26,9 +26,10 @@ structure Statics = struct
 
   structure VMap = BinarySearchMap (struct type t = Syntax.var open String end)
 
-  exception NotUnit of Template.modtemp
+  exception NotUnitExport of Template.modtemp
   exception NotAtomicType of Template.modtemp
   exception NotArrowKind of kind
+  exception SigShouldNotExportAbstractTypes of kind list
 
   fun get_template (env : Env.Template.t) : Syntax.module -> Template.unittemp =
   let open Template in
@@ -74,21 +75,40 @@ structure Statics = struct
          let
            val ut = get_template env m
          in
-           (LStr Record.empty, [], Unit ut)
+           (LStr Record.empty, [], Unit(ut, Export))
+         end
+     | Syntax.MUI usig =>
+         let val ut = get_template_usig env usig in
+           (LStr Record.empty, [], Unit(ut, Import))
          end
      | Syntax.MNew m =>
          let
            val (loc, _, t) = get_template env m
          in
            case t of
-                Unit ut => ut (* TODO: check that `loc` is empty? *)
-              | _       => raise NotUnit t
+                Unit(ut, Export) => ut (* TODO: check that `loc` is empty? *)
+              | _                => raise NotUnitExport t
          end
      | Syntax.MDataSpec(l, ty) =>
          get_template env $ Syntax.MInj(l, Syntax.MTI $ get_template_type env ty)
      | Syntax.MDataBind(l, ty) =>
          get_template env $ Syntax.MSeal(NONE, Syntax.MDataSpec(l, ty), Syntax.MEmpty)
   end
+
+  and get_template_usig env usig =
+    let
+      val ((m, ps), exp) = case usig of Syntax.Export x => (x, true) | Syntax.Import x => (x, false)
+      val (loc, ks, t) = get_template env m
+      val () =
+        if null ks
+        then ()
+        else raise SigShouldNotExportAbstractTypes ks
+      val (loc1, loc2) = Template.separate ps loc
+    in
+      if exp
+      then (loc1, Template.get_kinds loc2, Template.abs_at ps t)
+      else (loc2, Template.get_kinds loc1, Template.neg $ Template.abs_at ps t)
+    end
 
   and get_template_type env : Syntax.ty -> kind =
   let open Template in
@@ -137,7 +157,7 @@ structure Statics = struct
   structure E = struct
     exception NotAtomicType of modsig
     exception NotAtomicExp of modsig
-    exception NotUnit of modsig
+    exception NotUnitExport of modsig
   end
 
   fun elaborate env r es =
@@ -212,7 +232,7 @@ structure Statics = struct
            val s1d = Subst.apply_modsig subst s1
            val s2 = elaborate (env |> Env.insert_opt v (abs s1d)) (Subst.apply_realizer subst ry) es2 m2
          in
-           merge s1d s2
+           merge (Env.is_static env) s1d s2
          end
      | Syntax.MSeal(v, m1, m2) =>
          let
@@ -241,19 +261,21 @@ structure Statics = struct
                val subst = bidirectional_lookup (fvs1, s1) (fvs2, s2')
                val s1d = Subst.apply_modsig subst s1
                val s2 = elaborate (env |> Env.apply subst |> Env.insert_opt v (abs s1d)) (Subst.apply_realizer subst r2) es2 m2
-               val () = must_be_absolute $ merge s1d s2
+               val () = must_be_absolute $ merge (Env.is_static env) s1d s2
              in
                abs s1
              end
          end
-     | Syntax.MUnit m => Unit $ elaborate_unit env m
+     | Syntax.MUnit m => Unit(elaborate_unit env m, Export)
+     | Syntax.MUI usig => Unit(elaborate_usig env usig, Import)
      | Syntax.MNew m =>
          let
            fun f (_, p) : ty = lookup_realizer p r
          in
            case elaborate_complete env m of
-                Unit(is, ks, s) => open_at_modsig 1 (map f is) $ open_at_modsig 0 (map TFree es) s
-              | s               => raise E.NotUnit s
+                Unit((is, ks, s), Export) =>
+                  open_at_modsig 1 (map f is) $ open_at_modsig 0 (map TFree es) s
+              | s => raise E.NotUnitExport s
          end
      | Syntax.MDataSpec(l, ty) =>
          let
@@ -467,7 +489,40 @@ structure Statics = struct
     val es = map FVar.fresh ks
     val s = elaborate env r es m
   in
-    (is, ks, close_at_modsig 1 fvs $ close_at_modsig 0 es s)
+    (is, map (fn k => (k, NONE)) ks, close_at_modsig 1 fvs $ close_at_modsig 0 es s)
+  end
+
+  and elaborate_usig env (Syntax.Import(m, ps)) : unitsig =
+        let
+          val (is, es, s) = elaborate_usig env (Syntax.Export(m, ps))
+
+          (* Just swap `TBound(0, _)` and `TBound(1, _)`. *)
+          val ifvs = map (fn (k, _) => FVar.fresh k) is
+          val efvs = map (fn (k, _) => FVar.fresh k) es
+          val s = open_at_modsig 0 (map TFree efvs) $ open_at_modsig 1 (map TFree ifvs) s
+          val s = close_at_modsig 1 efvs $ close_at_modsig 0 ifvs s
+        in
+          (map (fn (k, p) => (k, valOf p)) es, map (fn (k, p) => (k, SOME p)) is, neg s)
+        end
+    | elaborate_usig env (Syntax.Export(m, ps)) : unitsig =
+  let
+    val (is, es, s) = elaborate_unit env m
+    val () =
+      if null es (* TODO: check specious abstract type exports? *)
+      then ()
+      else raise SigShouldNotExportAbstractTypes (map #1 es)
+
+    val () = check_no_exports s (* Note: We don't need to open `s`. *)
+
+    val ifvs = map (fn (k, p) => (FVar.fresh k, p)) is
+    val s' = open_at_modsig 1 (map (TFree o #1) ifvs) s
+    val (ifvs, efvs) = separate ps ifvs
+    val s' = abs_at ps s'
+  in
+    ( map (fn (fv, p) => (FVar.get_kind fv, p)) ifvs
+    , map (fn (fv, p) => (FVar.get_kind fv, SOME p)) efvs
+    , close_at_modsig 1 (map #1 ifvs) $ close_at_modsig 0 (map #1 efvs) s'
+    )
   end
 
   (* No imports, but allows abstract type exports. *)

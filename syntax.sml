@@ -19,6 +19,9 @@ structure Syntax = struct
 
   type label = Label.t
 
+  (* This is necessary due to MLKit's mysterious behavior. *)
+  structure Path = Path
+
   (* `base` always has the base kind and is free from type variables. *)
   datatype base
     = Bool
@@ -46,11 +49,16 @@ structure Syntax = struct
     | MInj of label * module
     | MProj of module * label
     | MUnit of module
+    | MUI of usig
     | MNew of module
     | MLink of modvar option * module * module
     | MSeal of modvar option * module * module
     | MDataSpec of label * ty
     | MDataBind of label * ty
+
+  and usig
+    = Import of module * path list
+    | Export of module * path list
 
   and exp
     = EVal of module

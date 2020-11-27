@@ -25,6 +25,8 @@ terminal TRUE
 terminal FALSE
 terminal MATCH
 terminal DATA
+terminal IMPORT
+terminal EXPORT
 
 terminal LPAREN
 terminal RPAREN
@@ -66,6 +68,7 @@ nonterminal ModuleAtom : module =
   LBRACK TYPE 1:Type RBRACK       => type_export
   LBRACK TYPE COLON 1:Kind RBRACK => type_import
   LBRACK UNIT 1:Module RBRACK     => unit_export
+  LBRACK UNIT COLON 1:USig RBRACK => unit_import
   LBRACE 1:Dec RBRACE             => module_id
 
 nonterminal Dec : module =
@@ -75,8 +78,21 @@ nonterminal Dec : module =
   VAL 1:Label EQUAL 2:Exp       => mval_binding
   VAL 1:Label COLON 2:Type      => mval_spec
   UNIT 1:Label EQUAL 2:Module   => munit_binding
+  UNIT 1:Label COLON 2:USig     => munit_spec
   DATA 1:Label COLON 2:Type     => mdata_spec
   DATA 1:Label EQUAL 2:Type     => mdata_binding
+
+nonterminal USig : usig =
+  1:ModuleProj IMPORT LPAREN 2:Paths RPAREN => usig_import
+  1:ModuleProj EXPORT LPAREN 2:Paths RPAREN => usig_export
+
+nonterminal Paths : paths =
+  1:Path               => paths1
+  1:Path COMMA 2:Paths => paths_cons
+
+nonterminal Path : path =
+  1:Label            => path_label
+  1:Label DOT 2:Path => path_cons
 
 nonterminal ModVar : modvar =
   1:UPPER_IDENT => mvar_upper

@@ -46,21 +46,21 @@ functor SemObj (X : S) = struct
   datatype modsig
     = Type of ty
     | Val of ty * polarity
-    | Unit of unitsig
+    | Unit of unitsig * polarity
     | Str of modsig Record.t
 
   withtype unitsig
-    = (kind * path) list * kind list * modsig
+    = (kind * path) list * (kind * path option) list * modsig
 
   datatype realizer
     = RAtom of ty
     | RStr of realizer Record.t
 
   val rec abs =
-    fn Type ty           => Type ty
-     | Val(ty, _)        => Val(ty, Export)
-     | Unit(u : unitsig) => Unit u
-     | Str r             => Str (Record.map abs r)
+    fn Type ty    => Type ty
+     | Val(ty, _) => Val(ty, Export)
+     | Unit(u, _) => Unit(u, Export)
+     | Str r      => Str (Record.map abs r)
 
   fun open_at j tys =
   let
@@ -84,7 +84,7 @@ functor SemObj (X : S) = struct
   fun open_at_modsig j tys =
     fn Type ty    => Type (open_at j tys ty)
      | Val(ty, p) => Val(open_at j tys ty, p)
-     | Unit u     => Unit (open_at_unitsig j tys u)
+     | Unit(u, p) => Unit(open_at_unitsig j tys u, p)
      | Str r      => Str (Record.map (open_at_modsig j tys) r)
 
   and open_at_unitsig j tys (is, es, s) =
@@ -114,7 +114,7 @@ functor SemObj (X : S) = struct
   fun close_at_modsig j fvs =
     fn Type ty    => Type (close_at j fvs ty)
      | Val(ty, p) => Val(close_at j fvs ty, p)
-     | Unit u     => Unit (close_at_unitsig j fvs u)
+     | Unit(u, p) => Unit(close_at_unitsig j fvs u, p)
      | Str r      => Str (Record.map (close_at_modsig j fvs) r)
 
   and close_at_unitsig j fvs (is, es, s) =
@@ -165,14 +165,14 @@ functor SemObj (X : S) = struct
       case s of
            Type ty => brack $ "=" <+> show_type 0 ty
          | Val(ty, p) => brack (show_type 0 ty) <> show_polarity p
-         | Unit u => brack (show_unit u) <> show_polarity Export
+         | Unit(u, p) => brack (show_unit u) <> show_polarity p
          | Str r => brace $ show_list $
              map (fn (l, s) => Label.show l <:> s) $ Record.to_list $ Record.map show_modsig r
 
     and show_unit (is, es, s) =
     let
       val ifvs = map (fn (k, _) => FVar.fresh k) is
-      val efvs = map FVar.fresh es
+      val efvs = map (fn (k, _) => FVar.fresh k) es
 
       fun i acc =
         if null is
@@ -189,12 +189,31 @@ functor SemObj (X : S) = struct
         else
           "exist" <+>
           show_list
-            (map (fn (v, k) => paren true $ FVar.show v <:> Kind.show k) (ListPair.zipEq (efvs, es)))
+            (map (fn (v, (k, _)) => paren true $ FVar.show v <:> Kind.show k) (ListPair.zipEq (efvs, es)))
           <> "." <+> acc
     in
       i $ e $ show_modsig $ open_at_modsig 0 (map TFree efvs) $ open_at_modsig 1 (map TFree ifvs) s
     end
   end
+
+  exception ShouldNotExport of modsig
+
+  val rec check_no_exports =
+    fn Type _ => ()
+     | s as Val(_, Export) => raise ShouldNotExport s
+     | Val(_, Import) => ()
+     | s as Unit(_, Export) => raise ShouldNotExport s
+     | Unit(_, Import) => ()
+     | Str r => Record.app check_no_exports r
+
+  fun neg_polarity Import = Export
+    | neg_polarity Export = Import
+
+  val rec neg =
+    fn Type ty => Type ty
+     | Val(ty, p) => Val(ty, neg_polarity p)
+     | Unit(u, p) => Unit(u, neg_polarity p)
+     | Str r      => Str (Record.map neg r)
 
   fun reduce (TApp(x, y)) = reduce' (reduce x) y
     | reduce ty           = ty
@@ -346,7 +365,7 @@ functor SemObj (X : S) = struct
     case s of
          Type ty => free_vars ty
        | Val(ty, _) => free_vars ty
-       | Unit u     => free_vars_unit u
+       | Unit(u, _) => free_vars_unit u
        | Str r      =>
            Record.fold_left
              (fn acc => fn _ => fn s => FVar.Map.union acc (free_vars_modsig s))
@@ -356,7 +375,7 @@ functor SemObj (X : S) = struct
   and free_vars_unit (is, es, s) =
   let
     val ifvs = map (fn (k, _) => TFree (FVar.fresh k)) is
-    val efvs = map (TFree o FVar.fresh) es
+    val efvs = map (fn (k, _) => TFree (FVar.fresh k)) es
     val s' = open_at_modsig 0 efvs (open_at_modsig 1 ifvs s)
   in
     free_vars_modsig s'
@@ -364,6 +383,7 @@ functor SemObj (X : S) = struct
 
   exception NotAbsolute of modsig
   exception MergeValExports of ty * ty
+  exception MergeUnitExports of unitsig * unitsig
 
   fun must_be_absolute (s : modsig) : unit =
     case s of
@@ -372,7 +392,10 @@ functor SemObj (X : S) = struct
            if p = Export
            then ()
            else raise NotAbsolute(s)
-       | Unit _ => ()
+       | Unit(_, p) =>
+           if p = Export
+           then ()
+           else raise NotAbsolute(s)
        | Str r => Record.app must_be_absolute r
 
   exception MergeError of modsig * modsig
@@ -386,33 +409,6 @@ functor SemObj (X : S) = struct
          TBottom => ()
        | _       => equal_type x y KBase
   end
-
-  fun merge_polarity Import Import = Import
-    | merge_polarity _ _           = Export
-
-  fun merge s1 s2 : modsig =
-    case (s1, s2) of
-         (Type x, Type y) =>
-           let
-             val k = kind_of x
-             val () = kindcheck y k
-             val () = equal_type x y k
-           in
-             Type x
-           end
-       | (Val(x, Import), Val(y, p2)) => Val(y, p2) before subtype y x
-       | (Val(x, p1), Val(y, Import)) => Val(x, p1) before subtype x y
-       | (Val(x, Export), Val(y, Export)) => raise MergeValExports(x, y)
-       | (Str r1, Str r2) => Str (Record.union_with merge r1 r2)
-       | (Str r, s) =>
-           if Record.is_empty r
-           then s
-           else raise MergeError (Str r, s)
-       | (s, Str r) =>
-           if Record.is_empty r
-           then s
-           else raise MergeError (Str r, s)
-       | _ => raise MergeError (s1, s2)
 
   structure Subst :> sig
     type t
@@ -438,13 +434,13 @@ functor SemObj (X : S) = struct
     fun apply_modsig (subst : t) =
       fn Type ty => Type (apply subst ty)
        | Val(ty, p) => Val(apply subst ty, p)
-       | Unit u => Unit (apply_unit subst u)
+       | Unit(u, p) => Unit(apply_unit subst u, p)
        | Str r  => Str (Record.map (apply_modsig subst) r)
 
     and apply_unit subst (is, es, s) =
     let
       val ifvs = map (fn (k, _) => FVar.fresh k) is
-      val efvs = map FVar.fresh es
+      val efvs = map (FVar.fresh o #1) es
       val s' = open_at_modsig 0 (map TFree efvs) (open_at_modsig 1 (map TFree ifvs) s)
     in
       (is, es, close_at_modsig 1 ifvs (close_at_modsig 0 efvs (apply_modsig subst s')))
@@ -463,6 +459,8 @@ functor SemObj (X : S) = struct
       show_list $ map (fn (v, ty) => FVar.show v <:> show_type 0 ty) xs
     end
   end
+
+  fun equal_unit (u1 : unitsig) (u2 : unitsig) : unit = raise Std.TODO
 
   exception NotStructure of modsig
   exception NotTypeComponent of modsig
@@ -495,6 +493,9 @@ functor SemObj (X : S) = struct
              then p
              else find loc v
   in
+    fun merge_polarity Import Import = Import
+      | merge_polarity _ _           = Export
+
     fun bidirectional_lookup (loc1 : locator, s1) (loc2 : locator, s2) : Subst.t =
     let
       val xs : (fvar * ty) list =
@@ -529,7 +530,102 @@ functor SemObj (X : S) = struct
     in
       foldl (fn (fv, acc) => Subst.cons (fv, Subst.apply acc (get_type fv)) acc) Subst.id sfvs
     end
+
+    and merge is_static s1 s2 : modsig =
+      case (s1, s2) of
+           (Type x, Type y) =>
+             let
+               val k = kind_of x
+               val () = kindcheck y k
+               val () = equal_type x y k
+             in
+               Type x
+             end
+         | (Val(x, Import), Val(y, p2)) => Val(y, p2) before subtype y x
+         | (Val(x, p1), Val(y, Import)) => Val(x, p1) before subtype x y
+         | (Val(x, Export), Val(y, Export)) => raise MergeValExports(x, y)
+         | (Unit(u1, Export), Unit(u2, Import)) => Unit(u1, Export) before match is_static u1 u2
+         | (Unit(u1, Import), Unit(u2, Export)) => Unit(u2, Export) before match is_static u2 u1
+         | (Unit(u1, Import), Unit(u2, Import)) => Unit(u1, Import) before equal_unit u1 u2
+         | (Unit(u1, Export), Unit(u2, Export)) => raise MergeUnitExports(u1, u2)
+         | (Str r1, Str r2) => Str (Record.union_with (merge is_static) r1 r2)
+         | (Str r, s) =>
+             if Record.is_empty r
+             then s
+             else raise MergeError (Str r, s)
+         | (s, Str r) =>
+             if Record.is_empty r
+             then s
+             else raise MergeError (Str r, s)
+         | _ => raise MergeError (s1, s2)
+
+    and match is_static (is1, es1, s1) (is2, es2, s2) : unit =
+      if is_static
+      then ()
+      else
+        (* These `valOf` never raise the `Option` exception (if correctly implemented). *)
+        let
+          val f = map (TFree o #1)
+
+          val loc11 = map (fn (k, p) => (FVar.fresh k, p)) is1
+          val loc12 = map (fn (k, _) => FVar.fresh k) es1
+          val s1 = open_at_modsig 0 (map TFree loc12) (open_at_modsig 1 (f loc11) s1)
+
+          val loc21 = map (fn (k, _) => FVar.fresh k) is2
+          val loc22 = map (fn (k, p) => (FVar.fresh k, valOf p)) es2
+          val s2 = open_at_modsig 0 (f loc22) (open_at_modsig 1 (map TFree loc21) s2)
+
+          val subst = bidirectional_lookup (loc11, s1) (loc22, s2)
+
+          val s1' = Subst.apply_modsig subst s1
+          val s2' = neg (Subst.apply_modsig subst s2)
+        in
+          must_be_absolute (merge is_static s1' s2')
+        end
   end
+
+  local type fvps = (fvar * path) list in
+    fun separate1 p (is : fvps) : fvps * fvps =
+    let
+      fun f (_, p') = Path.start_with p p'
+      val (es, is) = List.partition f is
+    in
+      (is, es)
+    end
+
+    (* TODO: We may need to sort the second componont of the returned value
+    * to make `equal_unit` implementation simple (and also for first-class units).
+    *)
+    fun separate (ps : path list) (is : fvps) : fvps * fvps =
+    let
+      fun go acc [] = acc
+        | go (is, es) (p :: ps) =
+            let
+              val (is', es') = separate1 p is
+            in
+              (is', es' @  es)
+            end
+    in
+      go (is, []) ps
+    end
+  end
+
+  exception NoSuchPath of path * modsig
+
+  fun abs_at1 p s =
+    case Path.uncons p of
+         NONE => abs s
+       | SOME(l, p') =>
+           case s of
+                Str r =>
+                  Str (Record.alter l (
+                    fn SOME s' => SOME (abs_at1 p' s')
+                     | NONE    => raise NoSuchPath(p, s)
+                  ) r)
+              | _ => raise NotStructure s
+
+  fun abs_at [] s = s
+    | abs_at (p :: ps) s = abs_at ps (abs_at1 p s)
 
   structure Template = struct
     datatype loctemp
@@ -538,7 +634,7 @@ functor SemObj (X : S) = struct
 
     datatype modtemp
       = Type of kind
-      | Unit of unittemp
+      | Unit of unittemp * polarity
       | Str of modtemp Record.t
 
     withtype unittemp = loctemp * kind list * modtemp
@@ -551,6 +647,11 @@ functor SemObj (X : S) = struct
            let open Pretty in
              (brace o Show.show_list o map (fn (l, s) => Label.show l ^ ":" ^ s) o Record.to_list o Record.map show_loctemp) r
            end
+
+    val rec neg =
+      fn Type k => Type k
+       | Unit(ut, p) => Unit(ut, neg_polarity p)
+       | Str r       => Str(Record.map neg r)
 
     (* Return an empty structure if missing. *)
     fun lookup_loctemp l =
@@ -639,7 +740,26 @@ functor SemObj (X : S) = struct
       fn Str r => (valOf (Record.lookup l r) handle Option => raise MissingLabel l)
        | t     => raise NotStructure t
 
-    fun abs t = t (* TODO: Change this function when unit imports are introduced. *)
+    fun abs (Type k)     = Type k
+      | abs (Unit(u, _)) = Unit(u, Export)
+      | abs (Str r)      = Str(Record.map abs r)
+
+    exception NoSuchPath of path * modtemp
+
+    fun abs_at1 p t =
+      case Path.uncons p of
+           NONE => abs t
+         | SOME(l, p') =>
+             case t of
+                  Str r =>
+                    Str (Record.alter l (
+                      fn SOME t' => SOME (abs_at1 p' t')
+                       | NONE    => raise NoSuchPath(p, t)
+                    ) r)
+                | _ => raise NotStructure t
+
+    fun abs_at [] t = t
+      | abs_at (p :: ps) t = abs_at ps (abs_at1 p t)
 
     exception CannotMerge of modtemp * modtemp
 
@@ -649,6 +769,14 @@ functor SemObj (X : S) = struct
              if k1 = k2
              then Type k1
              else raise KindMismatch(k1, k2)
+         | (Unit(u1, p1), Unit(u2, p2)) =>
+             let in
+               case (p1, p2) of
+                    (Export, Export) => raise CannotMerge(x, y)
+                  | (Export, Import) => x
+                  | (Import, Export) => y
+                  | (Import, Import) => raise Std.TODO
+             end
          | (Str r1, Str r2) =>
              let
                fun f acc l t =
@@ -667,7 +795,6 @@ functor SemObj (X : S) = struct
              then x
              else raise CannotMerge(x, y)
          | _ => raise CannotMerge(x, y)
-         (* TODO: Change this function when unit imports are introduced. *)
 
     (* Units are ignored. *)
     fun dom (Type _) : path list = [Path.empty]
@@ -702,6 +829,29 @@ functor SemObj (X : S) = struct
              if Record.is_empty r
              then x
              else raise CannotMergeLocator(x, y)
+
+    fun separate1 p loc =
+      case Path.uncons p of
+           NONE => (LStr Record.empty, loc)
+         | SOME(l, p') =>
+             case loc of
+                  LAtom _ => raise NotStructureLocator loc
+                | LStr r  =>
+                    case Record.lookup l r of
+                         NONE => (loc, LStr Record.empty)
+                       | SOME loc' =>
+                           let val (loc1, loc2) = separate1 p' loc' in
+                             (LStr (Record.insert l loc1 r), LStr (Record.singleton l loc2))
+                           end
+
+    fun separate [] loc = (loc, LStr Record.empty)
+      | separate (p :: ps) loc =
+      let
+        val (loc1, loc2) = separate1 p loc
+        val (x, y) = separate ps loc1
+      in
+        (x, merge_loctemp y loc2)
+      end
   end
 
   (* This indicates that there are some bugs. *)
@@ -709,10 +859,10 @@ functor SemObj (X : S) = struct
 
   fun erase s =
     case s of
-         Type ty => Template.Type (kind_of ty)
-       | Val _   => Template.Str Record.empty
-       | Unit u  => Template.Unit (erase_unit u)
-       | Str r   => Template.Str (Record.map erase r)
+         Type ty    => Template.Type (kind_of ty)
+       | Val _      => Template.Str Record.empty
+       | Unit(u, p) => Template.Unit(erase_unit u, p)
+       | Str r      => Template.Str (Record.map erase r)
 
   and erase_unit (is, es, s) =
   let
@@ -740,10 +890,10 @@ functor SemObj (X : S) = struct
     val l = foldl f (Template.LStr Record.empty) is
 
     val ifvs = map (fn (k, _) => FVar.fresh k) is
-    val efvs = map FVar.fresh es
+    val efvs = map (FVar.fresh o #1) es
     val s' = erase (open_at_modsig 0 (map TFree efvs) (open_at_modsig 1 (map TFree ifvs) s))
   in
-    (l, es, s')
+    (l, map #1 es, s')
   end
 
   fun loctemp_to_realizer (ant : path) (acc : (fvar * (kind * path)) list ref) loc : realizer =

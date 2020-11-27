@@ -18,8 +18,11 @@ structure Parser = MakeParser (
     type string = string
     type int = int
     type module = module
+    type usig = usig
     type modvar = ModVar.t
     type label = Label.t
+    type path = path
+    type paths = path list
     type exp = exp
     type exps = exp list
     type param = pattern * ty
@@ -44,6 +47,7 @@ structure Parser = MakeParser (
     val type_export = MTE
     val type_import = MTI
     val unit_export = MUnit
+    val unit_import = MUI
     val minj = MInj
     val mproj = MProj
     val mnew = MNew
@@ -57,8 +61,18 @@ structure Parser = MakeParser (
     fun mval_binding (l, e) = MInj(l, MVE e)
     fun mval_spec (l, ty) = MInj(l, MVI ty)
     fun munit_binding (l, m) = MInj(l, MUnit m)
+    fun munit_spec (l, u) = MInj(l, MUI u)
     fun mdata_spec (l, ty) = MDataSpec (l, ty)
     fun mdata_binding (l, ty) = MDataBind (l, ty)
+
+    val usig_import = Import
+    val usig_export = Export
+
+    fun paths1 p = [p]
+    fun paths_cons (p, ps) = p :: ps
+
+    fun path_label l = Path.prepend l Path.empty
+    fun path_cons (l, p) = Path.prepend l p
 
     fun mvar_upper s = ModVar.from_string s
     fun mvar_lower s = ModVar.from_string s
