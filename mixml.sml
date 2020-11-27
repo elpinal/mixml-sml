@@ -36,6 +36,8 @@ end = struct
         Statics.MissingLabel l => fail ("missing label: " ^ Label.show l)
       | Statics.TypeMismatch(x, y) =>
           fail ("type mismatch: " ^ Statics.Show.show_type 0 x <+> "vs" <+> Statics.Show.show_type 0 y)
+      | Statics.VarMismatch(x, y) =>
+          fail ("type varable mismatch: " ^ FVar.show x <+> "vs" <+> FVar.show y)
       | Statics.TypeSelfCycle p =>
           fail ("transparent type cycle: self recursion at" <+> Path.show p)
       | Statics.TypeCycle(p1, p2) =>
